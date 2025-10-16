@@ -19,8 +19,7 @@ jobs:
           python - << 'PY'
           import time
           start = time.time()
-          while time.time() - start < 60*340:  # 약 340분 동안 반복
-              # TODO: 파일 읽고 -> 갱신 -> 쓰기
+          while time.time() - start < 60*340:
               time.sleep(10)
           PY
 
