@@ -1,0 +1,35 @@
+name: loop-run
+
+on:
+  workflow_dispatch: {}  # 수동 시작만
+  repository_dispatch:   # 자기호출용 트리거
+    types: [rerun]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350  # 6시간(360) 전에 안전 종료
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13.7" }
+
+      - name: Run loop
+        run: |
+          python - << 'PY'
+          import time
+          start = time.time()
+          while time.time() - start < 60*340:  # 약 340분 동안 반복
+              # TODO: 파일 읽고 -> 갱신 -> 쓰기
+              time.sleep(10)
+          PY
+
+      - name: Re-dispatch self
+        env:
+          GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}   # Personal Access Token
+        run: |
+          curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type":"rerun"}'
