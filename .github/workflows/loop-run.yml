@@ -40,7 +40,7 @@ jobs:
             iter=$((iter+1))
 
             # iter 값을 환경변수로 파이썬에 전달
-            ITER="$iter" python - <<'PY'
+            ITER="$iter" python - <<-'PY'
               from pathlib import Path
               import os
               
