@@ -46,7 +46,7 @@ jobs:
               
               iter_val = int(os.environ["ITER"])
               p = Path("data/test.txt")
-              fi=p.open(p,'w')
+              fi=open(p,'w')
               fi.write(str(iter_val))
               fi.close()
             PY
