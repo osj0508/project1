@@ -24,33 +24,31 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"   # 3.11 또는 3.13 권장 (패치버전 X)
+          python-version: "3.11"   # 필요시 "3.13" 등으로 변경
 
-      - name: Run loop
+      - name: Run loop (python -c)
         shell: bash
         run: |
           set -euo pipefail
-          set -x  # <-- 디버그 출력 (실패 원인 파악 쉬움)
           mkdir -p data
 
           start=$(date +%s)
           iter=0
 
-          # 현재 브랜치명 폴백 (repository_dispatch에선 GITHUB_REF_NAME이 비어있을 수 있음)
+          # repository_dispatch 이벤트에서는 브랜치 변수가 없을 수 있으므로 폴백 지정
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
+          # 약 340분 동안 10초 간격으로 갱신
           while (( $(date +%s) - start < 60*340 )); do
             iter=$((iter+1))
 
-            # 갱신 (iter 값을 파일에 기록하는 예)
-            ITER="$iter" python - <<'PY'
-from pathlib import Path
-import os, tempfile
-
-iter_val = int(os.environ["ITER"])
-p = Path("data/test.txt")
-p.parent.mkdir(parents=True, exist_ok=True)
-PY
+            # iter 값을 환경변수 ITER로 넘기고, python -c 로 파일 원자적 갱신
+            ITER="$iter" python -c "import os,tempfile,pathlib; \
+p=pathlib.Path('data/test.txt'); p.parent.mkdir(parents=True,exist_ok=True); \
+iter_val=int(os.environ['ITER']); \
+tmp=tempfile.NamedTemporaryFile('w', delete=False, dir=p.parent, suffix='.tmp'); \
+tmp.write(str(iter_val)); tmp.flush(); os.fsync(tmp.fileno()); tmp.close(); \
+os.replace(tmp.name, p)"
 
             # 변경 있을 때만 커밋/푸시
             if ! git diff --quiet -- data/test.txt; then
@@ -58,7 +56,6 @@ PY
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add data/test.txt
               git commit -m "tick: $(date -u +%Y-%m-%dT%H:%M:%SZ) (iter $iter)" || true
-              # 브랜치 폴백 사용
               git pull --rebase --autostash origin "$BRANCH" || true
               git push origin "HEAD:$BRANCH" || true
             fi
@@ -70,8 +67,7 @@ PY
         env:
           GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}   # PAT with 'repo' scope
         run: |
-          set -x
-          curl -i -s -X POST \
+          curl -s -X POST \
             -H "Authorization: token ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/dispatches" \
