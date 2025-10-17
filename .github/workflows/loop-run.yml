@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p data
-
+          python -m pip install -q pandas requests
           start=$(date +%s)
           iter=0
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
