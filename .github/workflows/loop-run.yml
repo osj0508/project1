@@ -38,7 +38,7 @@ jobs:
 
           while [ "$iter" -le 29164 ]; do
             iter=$((iter+1))
-            ITER="$iter" python -c $'from pathlib import Path\n'\$'import os\n'\$'import pandas as pd\n'\$'import requests\n'\$'print("Hello,World!")\n'
+            ITER="$iter" python -c $'from pathlib import Path\n'\'import os\n'\'import pandas as pd\n'\'import requests\n'\'print("Hello,World!")\n'
 
 
 
