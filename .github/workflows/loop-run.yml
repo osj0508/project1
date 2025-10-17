@@ -36,14 +36,9 @@ jobs:
           iter=0
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
-          while (( $(date +%s) - start < 60*340 )); do
+          while [ "$iter" -le 29164 ]; do
             iter=$((iter+1))
-
-            ITER="$iter" python -c "from pathlib import Path; import os; \
-            p=Path('data/test.txt'); p.parent.mkdir(parents=True, exist_ok=True); \
-            iter_val=int(os.environ['ITER']); \
-            fi=open(p,'w'); fi.write(str(iter_val)); fi.close()"
-
+            ITER="$iter" python -c $'from pathlib import Path\n'\$'import os\n'\$'print("Hello")\n'
             if ! git diff --quiet -- data/test.txt; then
               git config user.name  "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
