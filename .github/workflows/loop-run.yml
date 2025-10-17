@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"   # 필요시 "3.13" 등으로 변경
+          python-version: "3.11"   
 
       - name: Run loop (python -c, your code style)
         shell: bash
@@ -36,17 +36,14 @@ jobs:
           iter=0
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
-          # 약 340분 동안 10초 간격으로 반복
           while (( $(date +%s) - start < 60*340 )); do
             iter=$((iter+1))
 
-            # 네가 쓰던 방식: Path + p.open('w') 로 쓰기
             ITER="$iter" python -c "from pathlib import Path; import os; \
             p=Path('data/test.txt'); p.parent.mkdir(parents=True, exist_ok=True); \
             iter_val=int(os.environ['ITER']); \
             fi=open(p,'w'); fi.write(str(iter_val)); fi.close()"
 
-            # 변경 있을 때만 커밋/푸시
             if ! git diff --quiet -- data/test.txt; then
               git config user.name  "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -56,7 +53,6 @@ jobs:
               git push origin "HEAD:$BRANCH" || true
             fi
 
-            sleep 10
           done
 
       - name: Re-dispatch self
