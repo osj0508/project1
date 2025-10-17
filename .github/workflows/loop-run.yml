@@ -31,16 +31,25 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p data
-          python -m pip install -q pandas requests
+
           start=$(date +%s)
           iter=0
           BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
+          iter=$((iter+1))
+          ITER="$iter" python -c "from pathlib import Path; import os; \
+          p=Path('data/test.txt'); p.parent.mkdir(parents=True, exist_ok=True); \
+          iter_val=int(os.environ['ITER']); \
+          file = open(p,'r'); tmp = file.read(10); file.close(); \
+          fi=open(p,'w'); fi.write(str(int(tmp)+1)); fi.close()"
 
-          while [ "$iter" -le 29164 ]; do
-            iter=$((iter+1))
-            ITER="$iter" python -c $'from pathlib import Path\nimport os\nimport pandas as pd\nimport requests\nprint("Hello,World!")\n'
-
-
+          if ! git diff --quiet -- data/test.txt; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/test.txt
+            git commit -m "tick: $(date -u +%Y-%m-%dT%H:%M:%SZ) (iter $iter)" || true
+            git pull --rebase --autostash origin "$BRANCH" || true
+            git push origin "HEAD:$BRANCH" || true
+          fi
 
           done
 
