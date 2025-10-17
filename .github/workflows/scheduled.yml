@@ -28,17 +28,25 @@ jobs:
           iter = 0
           while [$(($(date+%s)-start)) -lt $((60*340))]; do
             iter = $((iter+1))
-          
-            python - << 'PY'
-          
-            import time
-            start = time.time()
-            while time.time() - start < 60*340:
-                time.sleep(10)
+            
+            ITER = "$iter" python - << 'PY'
+            from pathlib import Path
+            import os
+            iter_val = int(os.environ["ITER"])
+            p = Path("data/test.txt")
+            fi = open(p,mode='w')
+            fi.write(str(iter_val))
+            fi.close()
             PY
+            
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            
+            git add data/test.txt
+            git commit -m "tick: $(date -u +%Y-%m-%dT%H:%M:%SZ) (iter $iter)" || true
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME:-$GITHUB_REF##refs/heads/}" || true
+            git push || true
+            sleep 10
+          done
 
       - name: Re-dispatch self
         env:
