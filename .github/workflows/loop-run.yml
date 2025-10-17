@@ -51,8 +51,6 @@ jobs:
             git push origin "HEAD:$BRANCH" || true
           fi
 
-          done
-
       - name: Re-dispatch self
         env:
           GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}   # PAT with 'repo' scope
