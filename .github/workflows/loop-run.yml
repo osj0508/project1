@@ -24,9 +24,9 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"   # 또는 "3.13"
+          python-version: "3.11"   # 필요시 "3.13" 등으로 변경
 
-      - name: Run loop
+      - name: Run loop (python -c, your code style)
         shell: bash
         run: |
           set -euo pipefail
@@ -34,22 +34,17 @@ jobs:
 
           start=$(date +%s)
           iter=0
+          BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
-          # 340분 동안 반복
+          # 약 340분 동안 10초 간격으로 반복
           while (( $(date +%s) - start < 60*340 )); do
             iter=$((iter+1))
 
-            # iter 값을 환경변수로 파이썬에 전달
-            ITER="$iter" python - <<-'PY'
-              from pathlib import Path
-              import os
-              
-              iter_val = int(os.environ["ITER"])
-              p = Path("data/test.txt")
-              fi=open(p,'w')
-              fi.write(str(iter_val))
-              fi.close()
-            PY
+            # 네가 쓰던 방식: Path + p.open('w') 로 쓰기
+            ITER="$iter" python -c "from pathlib import Path; import os; \
+            p=Path('data/test.txt'); p.parent.mkdir(parents=True, exist_ok=True); \
+            iter_val=int(os.environ['ITER']); \
+            fi=open(p,'w'); fi.write(str(iter_val)); fi.close()"
 
             # 변경 있을 때만 커밋/푸시
             if ! git diff --quiet -- data/test.txt; then
@@ -57,8 +52,8 @@ jobs:
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add data/test.txt
               git commit -m "tick: $(date -u +%Y-%m-%dT%H:%M:%SZ) (iter $iter)" || true
-              git pull --rebase --autostash origin "${GITHUB_REF_NAME:-${GITHUB_REF#refs/heads/}}" || true
-              git push || true
+              git pull --rebase --autostash origin "$BRANCH" || true
+              git push origin "HEAD:$BRANCH" || true
             fi
 
             sleep 10
@@ -66,10 +61,10 @@ jobs:
 
       - name: Re-dispatch self
         env:
-          GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}
+          GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}   # PAT with 'repo' scope
         run: |
           curl -s -X POST \
             -H "Authorization: token ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
             -d '{"event_type":"rerun"}'
