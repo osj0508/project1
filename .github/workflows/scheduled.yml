@@ -1,31 +1,48 @@
 name: loop-run
 
 on:
-  workflow_dispatch: {}  # 수동 시작만
-  repository_dispatch:   # 자기호출용 트리거
+  workflow_dispatch: {}  
+  repository_dispatch:   
     types: [rerun]
+
+permissions:
+  contents: write
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 350  # 6시간(360) 전에 안전 종료
+    timeout-minutes: 350  
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          
       - uses: actions/setup-python@v5
         with: { python-version: "3.13.7" }
 
       - name: Run loop
         run: |
-          python - << 'PY'
-          import time
-          start = time.time()
-          while time.time() - start < 60*340:
-              time.sleep(10)
-          PY
+          set -euo pipefail
+          start = $(date +%s)
+          iter = 0
+          while [$(($(date+%s)-start)) -lt $((60*340))]; do
+            iter = $((iter+1))
+          
+            python - << 'PY'
+          
+            import time
+            start = time.time()
+            while time.time() - start < 60*340:
+                time.sleep(10)
+            PY
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            
 
       - name: Re-dispatch self
         env:
-          GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}   # Personal Access Token
+          GH_TOKEN: ${{ secrets.PAT_FOR_DISPATCH }}
         run: |
           curl -s -X POST \
             -H "Authorization: token ${GH_TOKEN}" \
